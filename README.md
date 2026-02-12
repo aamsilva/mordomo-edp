@@ -1,95 +1,177 @@
-# Mordomo 3.0 MCP Gateway for EDP
+# Mordomo 3.0 - Multi-Agent AI Assistant for Energy Utilities
 
-Real-time MCP (Model Context Protocol) Gateway for EDP with WebSocket streaming support.
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green.svg)](https://fastapi.tiangolo.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 🚀 Quick Start
+> 🤖 Assistente virtual multi-agente para utilities de energia, com integração LLM (DeepSeek-V3), interface web responsiva e memória de contexto persistente.
 
-```bash
-# Navigate to project
-cd ~/clawd/projects/mordomo3-edp
+---
 
-# Start the gateway
-./start.sh
+## 🎯 Visão Geral
+
+O **Mordomo 3.0** é uma plataforma de assistência virtual inteligente para empresas de utilities (energia, água, telecomunicações), desenvolvida como demonstração de arquitetura multi-agente em tempo real.
+
+### Funcionalidades Principais:
+- 💰 **Consulta de Faturas** - Dados de faturação em tempo real
+- ⚡ **Análise de Consumo** - Padrões de consumo energético
+- 🔧 **Suporte Técnico** - Reporte e acompanhamento de avarias
+- 🧠 **LLM Inteligente** - Respostas naturais com DeepSeek-V3
+- 💬 **Memória de Contexto** - Conversas persistentes (localStorage)
+
+---
+
+## 🏗️ Arquitetura
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENTE (Browser)                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │   Desktop    │  │    Mobile    │  │    localStorage      │  │
+│  │   (Web)      │  │   (Web)      │  │   (Context Memory)   │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ HTTPS (Cloudflare Tunnel)
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    GATEWAY MCP (Porta 8080)                     │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  • Roteamento de Intenções                                 │ │
+│  • Proxy para /mcp (dados) e /chat (LLM)                      │ │
+│  • CORS habilitado para acesso web                            │ │
+└────────────────────┬──────────────────────────────────────────┘
+                     │
+       ┌─────────────┼─────────────┐
+       ▼             ▼             ▼
+┌──────────┐  ┌──────────┐  ┌──────────┐
+│  Billing │  │ Support  │  │   Grid   │
+│  Agent   │  │  Agent   │  │  Agent   │
+│  (Mock)  │  │  (Mock)  │  │  (Mock)  │
+└──────────┘  └──────────┘  └──────────┘
+       │             │             │
+       └─────────────┴─────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   LLM BRIDGE (Porta 8081)                       │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  • Modelo: DeepSeek-V3 (hf:deepseek-ai/DeepSeek-V3)        │ │
+│  • API: Synthetic.new (Anthropic format)                      │ │
+│  • Contexto: Histórico de conversa (últimas 6 mensagens)      │ │
+│  • Respostas: Naturais em português (PT-PT)                   │ │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-The gateway will be available at:
-- **HTTP Gateway**: http://localhost:8765
-- **WebSocket**: ws://localhost:8765/mcp/ws
-- **HTTP MCP**: http://localhost:8765/mcp
+---
 
-## 📁 Project Structure
+## 📁 Estrutura do Projeto
 
 ```
 mordomo3-edp/
-├── gateway.py          # Main MCP Gateway (FastAPI + WebSocket)
-├── demo_chatgpt.py     # ChatGPT integration demo
-├── start.sh            # Single-command startup script
-├── requirements.txt    # Python dependencies
-└── README.md          # This file
+├── README.md                 # Este ficheiro
+├── gateway.py               # MCP Gateway (FastAPI)
+├── llm_bridge.py            # LLM Bridge (DeepSeek-V3)
+├── web_server.py            # Servidor web estático + proxy
+├── web_interface/
+│   ├── index.html           # Interface universal (desktop + mobile)
+│   └── mobile.html          # Versão mobile otimizada (legacy)
+├── docs/
+│   └── architecture_diagrams.md  # Diagramas de arquitetura
+├── requirements.txt         # Dependências Python
+├── start.sh                 # Script de inicialização
+└── PUSH_TO_NEW_REPO.sh      # Script para push GitHub
+
 ```
 
-## 🔌 MCP Protocol Endpoints
+---
 
-### HTTP Endpoint
+## 🚀 Início Rápido
+
+### 1. Instalação
+
 ```bash
-POST http://localhost:8765/mcp
-Content-Type: application/json
+# Clonar repositório
+git clone https://github.com/aamsilva/mordomo3-edp.git
+cd mordomo3-edp
 
-{
-  "jsonrpc": "2.0",
-  "id": "1",
-  "method": "tools/list",
-  "params": {"agent_id": "edp-billing-agent"}
-}
+# Criar ambiente virtual
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# ou: venv\Scripts\activate  # Windows
+
+# Instalar dependências
+pip install -r requirements.txt
 ```
 
-### WebSocket Endpoint
-```javascript
-const ws = new WebSocket('ws://localhost:8765/mcp/ws');
+### 2. Configuração
 
-ws.onopen = () => {
-  ws.send(JSON.stringify({
-    jsonrpc: "2.0",
-    id: "1",
-    method: "tools/call",
-    params: {
-      name: "get_invoice",
-      arguments: {invoice_number: "INV-2026-001"}
-    }
-  }));
-};
+```bash
+# Configurar API Key da Synthetic (opcional, já configurado)
+export SYNTHETIC_API_KEY="syn_..."
+
+# Ou editar diretamente em llm_bridge.py
 ```
 
-## 🤖 EDP Billing Agent
+### 3. Iniciar Serviços
 
-The billing agent provides these tools:
+```bash
+# Método 1: Script automático
+./start.sh
 
-### Available Tools
+# Método 2: Manual (3 terminais)
+# Terminal 1: Gateway MCP
+python3 gateway.py
 
-| Tool | Description |
-|------|-------------|
-| `get_invoice` | Retrieve invoice by number or date |
-| `get_consumption` | Get electricity/gas consumption data |
-| `list_payments` | List payment history |
-| `get_contract_info` | Get contract details |
+# Terminal 2: LLM Bridge
+python3 llm_bridge.py
 
-### Example Tool Calls
+# Terminal 3: Web Server
+python3 web_server.py
+```
 
-**Get Invoice:**
+### 4. Aceder
+
+- **Local:** http://localhost:8080
+- **Público:** Usar Cloudflare Tunnel (ver abaixo)
+
+---
+
+## 🌐 Exposição Pública (Cloudflare Tunnel)
+
+```bash
+# Instalar cloudflared (se não instalado)
+brew install cloudflared  # Mac
+# ou: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation
+
+# Iniciar túnel
+cloudflared tunnel --url http://localhost:8080
+
+# Copiar URL gerada (ex: https://xxx.trycloudflare.com)
+```
+
+---
+
+## 🔌 API Endpoints
+
+### Gateway MCP (`/mcp`)
+
+**Consultar Fatura:**
 ```json
+POST /mcp
 {
   "jsonrpc": "2.0",
   "id": "1",
   "method": "tools/call",
   "params": {
     "name": "get_invoice",
-    "arguments": {"invoice_number": "INV-2026-001"}
+    "arguments": {"invoice_number": "latest"}
   }
 }
 ```
 
-**Get Consumption:**
+**Consultar Consumo:**
 ```json
+POST /mcp
 {
   "jsonrpc": "2.0",
   "id": "2",
@@ -101,184 +183,94 @@ The billing agent provides these tools:
 }
 ```
 
-## 🧪 Testing with ChatGPT
+### LLM Bridge (`/chat`)
 
-### Method 1: Custom GPT Actions
-
-1. Go to ChatGPT → Explore → Create a GPT
-2. Add an Action with this schema:
-
-```yaml
-openapi: 3.1.0
-info:
-  title: EDP Billing MCP
-  version: 1.0.0
-servers:
-  - url: http://localhost:8765
-paths:
-  /mcp:
-    post:
-      operationId: mcpCall
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                jsonrpc: {type: string}
-                id: {type: string}
-                method: {type: string}
-                params: {type: object}
-      responses:
-        "200":
-          description: MCP Response
+**Gerar Resposta Natural:**
+```json
+POST /chat
+{
+  "message": "Qual é o valor da minha fatura?",
+  "result": {"invoice": {...}},
+  "tool": "get_invoice",
+  "context": "Histórico da conversa..."
+}
 ```
 
-3. Use ngrok or Cloudflare tunnel to expose localhost
+---
 
-### Method 2: Direct API Integration
+## 🧠 Modelo LLM
 
-Use the demo script to test:
+- **Modelo:** `hf:deepseek-ai/DeepSeek-V3`
+- **Provider:** [Synthetic.new](https://synthetic.new)
+- **Formato:** Anthropic Messages API
+- **Temperatura:** 0.7
+- **Max Tokens:** 200
+- **Idioma:** Português (PT-PT)
 
-```bash
-# Run the demo
-python3 demo_chatgpt.py
-```
+### Características:
+- ✅ Respostas naturais e diretas
+- ✅ Sem "thinking" visível (diferente de Kimi/GLM)
+- ✅ Contexto de conversa mantido
+- ✅ Tom profissional e amigável
 
-This demonstrates:
-- HTTP endpoint communication
-- WebSocket streaming
-- Performance testing
+---
 
-### Method 3: Python Client
+## 💾 Memória de Contexto
 
-```python
-import httpx
+O sistema mantém o histórico de conversa usando **localStorage**:
 
-response = httpx.post("http://localhost:8765/mcp", json={
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "tools/call",
-    "params": {
-        "name": "get_invoice",
-        "arguments": {"invoice_number": "INV-2026-001"}
-    }
-})
-print(response.json())
-```
+- **Persistência:** Dados mantidos após fechar/reabrir browser
+- **Limite:** Últimas 6 mensagens enviadas ao LLM
+- **Privacidade:** Dados apenas no browser do utilizador
+- **Clear:** Botão "🗑️ Limpar" para resetar conversa
 
-## 🧪 Testing with Claude
+---
 
-Claude can connect via:
+## 🛠️ Tecnologias
 
-1. **MCP Inspector**: Use the MCP Inspector tool to test
-2. **Direct Integration**: Use the WebSocket endpoint
+| Componente | Tecnologia |
+|------------|-----------|
+| Gateway | FastAPI + Python 3.11+ |
+| LLM Integration | Synthetic API (Anthropic format) |
+| Frontend | HTML5 + CSS3 + Vanilla JS |
+| Design | CSS Variables, Flexbox, Mobile-First |
+| Tunnel | Cloudflare Quick Tunnels |
+| Storage | localStorage (browser) |
 
-Example:
-```bash
-# Using wscat for testing
-npm install -g wscat
-wscat -c ws://localhost:8765/mcp/ws
+---
 
-> {"jsonrpc":"2.0","id":"1","method":"tools/list","params":{}}
-```
+## 📱 Interface Responsiva
 
-## 🔍 API Reference
+A interface adapta-se automaticamente:
 
-### Gateway Endpoints
+- **Mobile (< 640px):** Layout compacto, touch otimizado
+- **Tablet (640-1024px):** Layout adaptativo
+- **Desktop (> 1024px):** Layout expandido, max-width 800px
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Gateway info |
-| `/health` | GET | Health check |
-| `/agents` | GET | List registered agents |
-| `/mcp` | POST | MCP HTTP endpoint |
-| `/mcp/ws` | WS | MCP WebSocket endpoint |
+---
 
-### MCP Methods
+## 🤝 Contribuição
 
-| Method | Description |
-|--------|-------------|
-| `tools/list` | List available tools |
-| `tools/call` | Execute a tool |
-| `agent/info` | Get agent information |
+1. Fork o repositório
+2. Cria uma branch (`git checkout -b feature/nova-feature`)
+3. Commit alterações (`git commit -am 'Add: nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Abre um Pull Request
 
-## 📊 Performance
+---
 
-The gateway is optimized for real-time responses:
+## 📄 Licença
 
-- **Target latency**: < 100ms for simple queries
-- **WebSocket**: Persistent connection for streaming
-- **HTTP**: Stateless request/response
+MIT License - ver [LICENSE](LICENSE) para detalhes.
 
-## 🛠️ Development
+---
 
-### Add a New Agent
+## 🙌 Créditos
 
-1. Create agent class in `gateway.py`:
-```python
-class MyNewAgent:
-    def __init__(self):
-        self.info = MCPAgentInfo(
-            id="my-agent",
-            name="My Agent",
-            description="...",
-            tools=[...]
-        )
-    
-    async def handle_request(self, request: MCPRequest) -> MCPResponse:
-        # Handle MCP requests
-        pass
-```
+Desenvolvido por [Augusto Silva](https://github.com/aamsilva) com apoio do OpenClaw Agent.
 
-2. Register in gateway:
-```python
-my_agent = MyNewAgent()
-registry.register_agent(my_agent.info, my_agent.handle_request)
-```
+**Demo criada para:** EDP (Energias de Portugal) - Sistema Multi-Agente para Utilities.
 
-### Testing Changes
+---
 
-```bash
-# Restart gateway
-./start.sh
-
-# Run demo tests
-python3 demo_chatgpt.py
-```
-
-## 🌐 External Access
-
-To test with ChatGPT/Claude externally, use a tunnel:
-
-### Option 1: Cloudflare Quick Tunnel
-```bash
-cloudflared tunnel --url http://localhost:8765
-```
-
-### Option 2: ngrok
-```bash
-ngrok http 8765
-```
-
-Then use the provided public URL in your MCP client configuration.
-
-## 📝 Requirements
-
-- Python 3.8+
-- FastAPI
-- WebSockets
-- Uvicorn
-
-## 🎯 Demo Checklist
-
-- [ ] Gateway starts successfully
-- [ ] HTTP endpoint responds
-- [ ] WebSocket connects
-- [ ] Tool calls work
-- [ ] Response time < 2 seconds
-- [ ] Demo script runs successfully
-
-## 📄 License
-
-Internal EDP Project - Mordomo 3.0
+*Última atualização: 2026-02-11*

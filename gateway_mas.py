@@ -12,7 +12,6 @@ import json
 
 # Import the Multi-Agent System
 from agents import Orchestrator, BillingAgent, EVAgent, SolarAgent
-from llm_bridge import llm_bridge
 
 app = FastAPI(title="Mordomo MAS Gateway", version="3.0")
 
@@ -63,7 +62,7 @@ def health():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """
-    Main chat endpoint - uses Multi-Agent System with LLM enhancement
+    Main chat endpoint - uses Multi-Agent System
     """
     try:
         # Route query through orchestrator
@@ -73,18 +72,10 @@ async def chat(request: ChatRequest):
         )
         
         response_data = result["response"]
-        agent_name = result["primary_agent"]
-        
-        # 🧠 ENHANCE: Pass through LLM for natural language
-        enhanced_message = llm_bridge.enhance_response(
-            user_query=request.message,
-            agent_response=response_data,
-            agent_name=agent_name
-        )
         
         return ChatResponse(
-            response=enhanced_message,
-            agent=agent_name,
+            response=response_data.get("message", ""),
+            agent=result["primary_agent"],
             data=response_data.get("data", {}),
             follow_up=response_data.get("follow_up", [])
         )

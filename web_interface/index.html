@@ -400,56 +400,55 @@
             showTyping();
             
             try {
-                const intent = detectIntent(text);
+                // 🚀 NOVO: Usar endpoint MAS /chat
+                // O orchestrator escolhe o agente automaticamente
+                // Usar o mesmo host (funciona local e via tunnel)
+                const CHAT_API_URL = window.location.origin.includes('localhost') 
+                    ? 'http://localhost:8765/chat'  // Local
+                    : 'https://corners-allergy-watts-tribal.trycloudflare.com/chat';  // Cloudflare
                 
-                // Se não há intenção específica mas há histórico, usar LLM com contexto
-                if (!intent) {
-                    // Chamar LLM sem dados de ferramenta, apenas com contexto da conversa
-                    const response = await enhanceWithLLM(text, {}, 'general', conversationHistory);
-                    
-                    hideTyping();
-                    
-                    if (response) {
-                        addMessage(response, false);
-                        conversationHistory.push({role: 'assistant', content: response});
-                    } else {
-                        const fallbackMsg = 'Posso ajudar com faturas, consumo de energia ou avarias. Tenta perguntar sobre a tua fatura.';
-                        addMessage(fallbackMsg, false);
-                        conversationHistory.push({role: 'assistant', content: fallbackMsg});
-                    }
-                    localStorage.setItem('chatHistory', JSON.stringify(conversationHistory));
-                    return;
-                }
+                const recentHistory = conversationHistory.slice(-6);
                 
-                const result = await callGateway(intent.tool, intent.args);
-                // Enviar histórico para LLM ter contexto
-                const response = await enhanceWithLLM(text, result, intent.tool, conversationHistory);
+                const res = await fetch(CHAT_API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        message: text,
+                        session_id: 'user_' + Math.random().toString(36).substr(2, 9),
+                        context: {history: recentHistory}
+                    })
+                });
                 
                 hideTyping();
                 
-                let finalResponse;
-                if (response) {
-                    finalResponse = response;
-                    addMessage(finalResponse, false);
-                } else {
-                    // Fallback
-                    if (intent.tool === 'get_invoice' && result.invoice) {
-                        const inv = result.invoice;
-                        const status = inv.status === 'paid' ? 'paga' : 'pendente';
-                        finalResponse = `A sua fatura ${inv.number} é de €${inv.amount} (emitida em ${inv.date}). Consumo: ${inv.consumption_kwh} kWh - ${status}.`;
-                    } else {
-                        finalResponse = 'Já obtive os dados. Pode consultar os detalhes.';
+                if (res.ok) {
+                    const data = await res.json();
+                    const responseText = data.response || 'Desculpe, não entendi.';
+                    
+                    addMessage(responseText, false);
+                    conversationHistory.push({role: 'assistant', content: responseText});
+                    
+                    // Mostrar follow-ups se existirem
+                    if (data.follow_up && data.follow_up.length > 0) {
+                        const followUpDiv = document.createElement('div');
+                        followUpDiv.className = 'quick-actions';
+                        followUpDiv.style.marginTop = '10px';
+                        followUpDiv.innerHTML = data.follow_up.map(fu => 
+                            `<button class="quick-btn" onclick="sendQuick('${fu}')">${fu}</button>`
+                        ).join('');
+                        chat.lastElementChild.appendChild(followUpDiv);
                     }
-                    addMessage(finalResponse, false);
+                } else {
+                    throw new Error('API Error');
                 }
                 
-                // Guardar resposta do assistente
-                conversationHistory.push({role: 'assistant', content: finalResponse});
                 localStorage.setItem('chatHistory', JSON.stringify(conversationHistory));
+                return;
                 
             } catch (e) {
+                console.log('MAS Error:', e);
                 hideTyping();
-                const errorMsg = 'Erro ao processar. Tenta novamente.';
+                const errorMsg = '⚠️ Sistema temporariamente indisponível. Tente novamente.';
                 addMessage(errorMsg, false);
                 conversationHistory.push({role: 'assistant', content: errorMsg});
                 localStorage.setItem('chatHistory', JSON.stringify(conversationHistory));
