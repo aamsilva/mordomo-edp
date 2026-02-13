@@ -2,9 +2,14 @@
 LLM Bridge - Natural Language Enhancement with DeepSeek-V3
 Polishes agent responses into conversational Portuguese
 """
+import os
 import requests
 import json
 from typing import Dict, Any
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class LLMBridge:
     """
@@ -12,9 +17,11 @@ class LLMBridge:
     """
     
     def __init__(self):
-        self.api_key = "syn_3005bb47081b13be8f207a31c56029fa"  # Synthetic API
-        self.base_url = "https://api.synthetic.new/v1/chat/completions"  # OpenAI-compatible endpoint
-        self.model = "hf:deepseek-ai/DeepSeek-V3"
+        self.api_key = os.getenv("SYNTHETIC_API_KEY")
+        if not self.api_key:
+            raise ValueError("SYNTHETIC_API_KEY environment variable not set")
+        self.base_url = os.getenv("SYNTHETIC_BASE_URL", "https://api.synthetic.new/v1/chat/completions")
+        self.model = os.getenv("SYNTHETIC_MODEL", "hf:deepseek-ai/DeepSeek-V3")
         
     def enhance_response(self, user_query: str, agent_response: Dict, agent_name: str) -> str:
         """

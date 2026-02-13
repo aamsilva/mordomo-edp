@@ -2,9 +2,14 @@
 Semantic Router - LLM-based intent classification
 Uses DeepSeek-V3 to determine which agent should handle a query
 """
+import os
 import requests
 import json
 from typing import Dict, List, Tuple
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class SemanticRouter:
     """
@@ -13,9 +18,11 @@ class SemanticRouter:
     """
     
     def __init__(self):
-        self.api_key = "syn_3005bb47081b13be8f207a31c56029fa"
-        self.base_url = "https://api.synthetic.new/v1/chat/completions"
-        self.model = "hf:deepseek-ai/DeepSeek-V3"
+        self.api_key = os.getenv("SYNTHETIC_API_KEY")
+        if not self.api_key:
+            raise ValueError("SYNTHETIC_API_KEY environment variable not set")
+        self.base_url = os.getenv("SYNTHETIC_BASE_URL", "https://api.synthetic.new/v1/chat/completions")
+        self.model = os.getenv("SYNTHETIC_MODEL", "hf:deepseek-ai/DeepSeek-V3")
         
         # Agent descriptions for the LLM
         self.agent_descriptions = {
