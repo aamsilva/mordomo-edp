@@ -7,6 +7,14 @@ import sys
 sys.path.insert(0, '..')
 from semantic_router import semantic_router
 
+# Import LLM Bridge for natural language enhancement
+try:
+    from llm_bridge import llm_bridge
+    LLM_AVAILABLE = True
+except ImportError:
+    LLM_AVAILABLE = False
+    print("⚠️ LLM Bridge not available, using raw agent responses")
+
 class Orchestrator:
     """
     Central coordinator for the Multi-Agent System
@@ -88,6 +96,19 @@ class Orchestrator:
         
         # Step 5: Update shared context
         self._update_context_from_response(primary_response)
+        
+        # Step 5.5: Enhance response with LLM for natural language
+        if LLM_AVAILABLE:
+            try:
+                enhanced_message = llm_bridge.enhance_response(
+                    user_query=query,
+                    agent_response=primary_response,
+                    agent_name=primary_agent.name
+                )
+                primary_response["message"] = enhanced_message
+                print(f"🧠 LLM enhanced response from {primary_agent.name}")
+            except Exception as e:
+                print(f"⚠️ LLM enhancement failed: {e}, using raw agent response")
         
         # Step 6: Store assistant response in history
         self.shared_context["conversation_history"].append({

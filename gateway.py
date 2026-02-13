@@ -4,17 +4,26 @@ Replaces the simple gateway.py with full MAS orchestration
 """
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import uvicorn
 import json
+import os
+from pathlib import Path
 
 # Import the Multi-Agent System
 from agents import Orchestrator, BillingAgent, EVAgent, SolarAgent
 from llm_bridge import llm_bridge
 
 app = FastAPI(title="Mordomo MAS Gateway", version="3.0")
+
+# Serve static files (web interface)
+web_interface_path = Path(__file__).parent / "web_interface"
+if web_interface_path.exists():
+    # Serve web_interface files at root
+    app.mount("/", StaticFiles(directory=str(web_interface_path), html=True), name="web_interface")
 
 # CORS for web interface
 app.add_middleware(
@@ -49,6 +58,10 @@ class ChatResponse(BaseModel):
 
 @app.get("/")
 def root():
+    # Serve index.html if it exists, otherwise return API info
+    index_path = Path(__file__).parent / "web_interface" / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
     return {
         "service": "Mordomo MAS Gateway",
         "version": "3.0",

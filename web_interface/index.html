@@ -400,12 +400,8 @@
             showTyping();
             
             try {
-                // 🚀 NOVO: Usar endpoint MAS /chat
-                // O orchestrator escolhe o agente automaticamente
-                // Usar o mesmo host (funciona local e via tunnel)
-                const CHAT_API_URL = window.location.origin.includes('localhost') 
-                    ? 'http://localhost:8765/chat'  // Local
-                    : 'https://corners-allergy-watts-tribal.trycloudflare.com/chat';  // Cloudflare
+                // 🚀 NOVO: Usar endpoint MAS /chat (mesmo domínio = sem CORS)
+                const CHAT_API_URL = '/chat';
                 
                 const recentHistory = conversationHistory.slice(-6);
                 
@@ -448,7 +444,14 @@
             } catch (e) {
                 console.log('MAS Error:', e);
                 hideTyping();
-                const errorMsg = '⚠️ Sistema temporariamente indisponível. Tente novamente.';
+                // Mostrar erro específico para debugging
+                let errorDetail = '';
+                if (e.message && e.message.includes('Failed to fetch')) {
+                    errorDetail = '\n\n[Erro de conexão - possível CORS]';
+                } else if (e.message) {
+                    errorDetail = '\n\n[' + e.message + ']';
+                }
+                const errorMsg = '⚠️ Sistema temporariamente indisponível.' + errorDetail;
                 addMessage(errorMsg, false);
                 conversationHistory.push({role: 'assistant', content: errorMsg});
                 localStorage.setItem('chatHistory', JSON.stringify(conversationHistory));

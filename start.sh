@@ -53,4 +53,15 @@ echo "Press Ctrl+C to stop"
 echo "=============================================="
 echo ""
 
-python3 gateway.py
+python3 gateway.py &
+GATEWAY_PID=$!
+
+# Wait for gateway to start
+sleep 2
+
+# Start web server
+echo ""
+echo "🌐 Starting Web Server..."
+echo "  📡 Web URL: http://localhost:8080"
+echo ""
+python3 web_server.py
