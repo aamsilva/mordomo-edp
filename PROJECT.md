@@ -1,9 +1,46 @@
 # Mordomo EDP 3.0 — Project Package
 
-**Gestor de Projeto:** AAMS (OpenClaw Agent)  
+**Gestor de Projeto:** AAMS (Henry)  
 **Cliente:** EDP (via Hexa Labs)  
 **Início:** 13 Fev 2026  
-**Status:** Em curso (PoC funcional)  
+**Última atualização:** 14 Fev 2026  
+**Status:** Sprint 2 - Hardening + Deploy
+
+---
+
+## 🚨 Current Status (14 Fev 2026, 18:00)
+
+### Decisões do PM (Henry)
+| Data | Decisão | Razão |
+|------|---------|-------|
+| 14 Fev | **Pivot Cloudflare → Railway** | Tunnel instável (530 errors), Railway mais fiável |
+| 14 Fev | **Sprint 2 em paralelo** | Não atrasar roadmap por blocker de infra |
+| 14 Fev | **Prioridade P0: Deploy** | Demo EDP precisa de URL permanente |
+
+### Progresso Sprint 2
+- [x] Issues #6, #7, #8 criadas (Railway, Logging, Error Handling)
+- [x] Issues #1, #2, #3 fechadas (Sprint 1)
+- [ ] Issue #5 (Docker) → **Closed, won't do** (Railway tem Docker built-in)
+- [ ] Issue #4 (Support Agent) → Sprint 2 continua
+
+### GitHub
+- **Repo:** https://github.com/aamsilva/mordomo-edp
+- **Issues abertas:** #4, #6, #7, #8
+- **Último commit:** `3ba4275` (API keys em .env)
+
+---
+
+## 1. Scope & Objectivos
+
+### 1.1 Visão
+Assistente virtual multi-agente para utilities de energia (EDP), com respostas naturais em PT-PT via LLM e arquitetura MCP (Model Context Protocol) escalável.
+
+### 1.2 Objectivos Técnicos
+| Fase | Objetivo | Status |
+|------|----------|--------|
+| PoC (Sem 1-2) | Gateway MCP + Billing Agent + Demo web | ✅ Funcional |
+| Piloto (Mês 1) | Support Agent + Grid Agent + **Railway Deploy** | 🔄 Em curso |
+| Produção (Mês 2-3) | EV Agent + Solar Agent + Autenticação | ⏳ Planeado |  
 
 ---
 
