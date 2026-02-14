@@ -145,3 +145,17 @@ API Response: b'{"id":"oWzqMSd-28Eivz-9cc741eb5b67af78","type":"message","role":
 127.0.0.1 - - [11/Feb/2026 23:28:37] "POST /chat HTTP/1.1" 200 -
 127.0.0.1 - - [11/Feb/2026 23:29:48] "POST /chat HTTP/1.1" 200 -
 127.0.0.1 - - [11/Feb/2026 23:30:18] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 17:02:11] code 501, message Unsupported method ('GET')
+127.0.0.1 - - [12/Feb/2026 17:02:12] "GET /health HTTP/1.1" 501 -
+127.0.0.1 - - [12/Feb/2026 17:40:41] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 17:40:45] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 17:49:09] "POST /chat HTTP/1.1" 500 -
+127.0.0.1 - - [12/Feb/2026 18:02:35] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 18:06:48] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 18:06:50] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 18:06:51] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 18:28:39] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 18:28:43] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 18:28:45] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 18:28:46] "POST /chat HTTP/1.1" 200 -
+127.0.0.1 - - [12/Feb/2026 18:30:58] "POST /chat HTTP/1.1" 200 -

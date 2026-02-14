@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 
 # Import the Multi-Agent System
-from agents import Orchestrator, BillingAgent, EVAgent, SolarAgent
+from agents import Orchestrator, BillingAgent, EVAgent, SolarAgent, SupportAgent
 from llm_bridge import llm_bridge
 
 # Import logging and error handling
@@ -56,6 +56,7 @@ orchestrator = Orchestrator()
 
 # Register all agents
 orchestrator.register_agent(BillingAgent())
+orchestrator.register_agent(SupportAgent())
 orchestrator.register_agent(EVAgent())
 orchestrator.register_agent(SolarAgent())
 

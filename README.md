@@ -13,9 +13,15 @@
 O **Mordomo 3.0** é uma plataforma de assistência virtual inteligente para empresas de utilities (energia, água, telecomunicações), desenvolvida como demonstração de arquitetura multi-agente em tempo real.
 
 ### Funcionalidades Principais:
-- 💰 **Consulta de Faturas** - Dados de faturação em tempo real
+- 💰 **Consulta de Faturas** (Billing Agent) - Dados de faturação em tempo real
+- 🔧 **Suporte Técnico** (Support Agent) - Reporte de avarias, tickets e agendamento de técnicos
+  - Reporte de avarias (contador, quadro elétrico, falta de luz)
+  - Consulta de estado de tickets
+  - Agendamento de visitas técnicas
+  - FAQ técnico com respostas automáticas
 - ⚡ **Análise de Consumo** - Padrões de consumo energético
-- 🔧 **Suporte Técnico** - Reporte e acompanhamento de avarias
+- 🚗 **Mobilidade Elétrica** (EV Agent) - Gestão de carregamento de veículos
+- ☀️ **Autoconsumo Solar** (Solar Agent) - Painéis solares e produção de energia
 - 🧠 **LLM Inteligente** - Respostas naturais com DeepSeek-V3
 - 💬 **Memória de Contexto** - Conversas persistentes (localStorage)
 
@@ -42,12 +48,12 @@ O **Mordomo 3.0** é uma plataforma de assistência virtual inteligente para emp
 └────────────────────┬──────────────────────────────────────────┘
                      │
        ┌─────────────┼─────────────┐
-       ▼             ▼             ▼
-┌──────────┐  ┌──────────┐  ┌──────────┐
-│  Billing │  │ Support  │  │   Grid   │
-│  Agent   │  │  Agent   │  │  Agent   │
-│  (Mock)  │  │  (Mock)  │  │  (Mock)  │
-└──────────┘  └──────────┘  └──────────┘
+       ▼             ▼             ▼             ▼
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+│  Billing │  │ Support  │  │    EV    │  │  Solar   │
+│  Agent   │  │  Agent   │  │  Agent   │  │  Agent   │
+│  (Mock)  │  │  (Mock)  │  │  (Mock)  │  │  (Mock)  │
+└──────────┘  └──────────┘  └──────────┘  └──────────┘
        │             │             │
        └─────────────┴─────────────┘
                      │

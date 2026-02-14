@@ -8,7 +8,7 @@
 
 ---
 
-## 🚨 Current Status (14 Fev 2026, 18:00)
+## 🚨 Current Status (14 Fev 2026, 22:30)
 
 ### Decisões do PM (Henry)
 | Data | Decisão | Razão |
@@ -20,25 +20,47 @@
 ### Progresso Sprint 2
 - [x] Issues #6, #7, #8 criadas (Railway, Logging, Error Handling)
 - [x] Issues #1, #2, #3 fechadas (Sprint 1)
+- [x] Issue #4 (Support Agent) → **Closed** ✅ (implementação completa)
 - [x] Issue #5 (Docker) → **Closed, won't do** (Railway tem Docker built-in)
 - [x] Issue #7 (Structured Logging) → **Closed** ✅ (código completo)
 - [x] Issue #8 (Error Handling) → **Closed** ✅ (código completo)
 - [ ] Issue #6 (Railway Deploy) → **Em curso** (configs prontas, deploy pendente)
-- [ ] Issue #4 (Support Agent) → Sprint 2 continua
 
 ### GitHub
 - **Repo:** https://github.com/aamsilva/mordomo-edp
-- **Issues abertas:** #4, #6
-- **Issues fechadas:** #1, #2, #3, #5, #7, #8
+- **Issues abertas:** #6
+- **Issues fechadas:** #1, #2, #3, #4, #5, #7, #8
 - **Último commit:** Verificar no GitHub
 
 ### O que foi entregue (14 Fev 2026)
 | Componente | Status | Detalhe |
 |------------|--------|---------|
+| Support Agent | ✅ Completo | `agents/support_agent.py` com ticketing, FAQ, agendamento |
 | Logging JSON | ✅ Completo | `utils/logging_config.py` funcional |
 | Error Handling | ✅ Completo | `utils/exceptions.py` com hierarquia completa |
 | Deploy Configs | ✅ Pronto | Render, Railway, Fly.io, Heroku configurados |
 | Deploy Executado | ⏳ Pendente | Necessita ação manual ou sub-agente dedicado |
+
+### Support Agent - Detalhes da Implementação (Issue #4)
+**Ficheiro:** `agents/support_agent.py`
+
+**Funcionalidades implementadas:**
+- ✅ `report_issue()` - Cria tickets de avaria (contador, quadro, falta de luz, tomada)
+- ✅ `check_ticket_status()` - Consulta estado de tickets (open, in_progress, resolved, closed)
+- ✅ `schedule_visit()` - Agenda visitas de técnicos com slots disponíveis
+- ✅ `get_faq()` - Respostas automáticas para dúvidas técnicas comuns
+- ✅ `handle_no_power()` - Diagnóstico de falta de luz
+- ✅ Integração cross-agent com Billing Agent (verificação de pendências)
+- ✅ Inter-agent messaging para collaboration
+- ✅ Mock data completo: 4 tickets exemplo, 7 FAQs, disponibilidade de técnicos
+- ✅ Registro no gateway.py
+
+**Testes implementados:**
+- Deteção automática de tipo de avaria
+- Extração de ticket ID de queries
+- Extração de datas preferidas
+- Geração automática de IDs sequenciais
+- Respostas formatadas em português
 
 ---
 
@@ -69,8 +91,11 @@ Assistente virtual multi-agente para utilities de energia (EDP), com respostas n
 | Produção (Mês 2-3) | EV Agent + Solar Agent + Deployment cloud | ⏳ Planeado |
 
 ### 1.3 Funcionalidades Atuais (PoC)
-- ✅ Consulta de faturas (mock)
+- ✅ Consulta de faturas (Billing Agent)
+- ✅ Suporte técnico e ticketing (Support Agent)
 - ✅ Análise de consumo (mock)
+- ✅ Gestão de mobilidade elétrica (EV Agent)
+- ✅ Autoconsumo solar (Solar Agent)
 - ✅ Interface web responsiva (desktop + mobile)
 - ✅ Integração LLM DeepSeek-V3
 - ✅ Memória de contexto (localStorage)
@@ -205,10 +230,14 @@ PM (AAMS)
 - [ ] Setup GitHub Projects board
 - [ ] Primeiro relatório semanal
 
-### Sprint 2 (21-27 Fev) — Support Agent
-- [ ] Implementar Support Agent (esqueleto)
-- [ ] Mock de ticketing system
-- [ ] Integração Support → Billing (cross-agent)
+### Sprint 2 (21-27 Fev) — Support Agent ✅ COMPLETO
+- [x] Implementar Support Agent (completo com ticketing)
+- [x] Mock de ticketing system (tickets, status, técnicos)
+- [x] Integração Support → Billing (cross-agent via message bus)
+- [x] Agendamento de visitas de técnicos
+- [x] FAQ técnico com respostas automáticas
+- [x] Diagnóstico de falta de luz
+- [x] Registro no gateway.py
 - [ ] Melhorias na interface web
 - [ ] Testes E2E básicos
 
