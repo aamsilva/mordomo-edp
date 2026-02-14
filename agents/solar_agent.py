@@ -3,6 +3,7 @@ Solar Agent - Photovoltaic systems and energy trading
 """
 from typing import Dict, Any
 from .base_agent import BaseAgent, AgentMessage
+from utils.logging_config import get_contextual_logger
 
 class SolarAgent(BaseAgent):
     """
@@ -21,6 +22,8 @@ class SolarAgent(BaseAgent):
                 "alertas_performance"
             ]
         )
+        self.logger = get_contextual_logger("solar_agent")
+        self.logger.info("SolarAgent initialized")
         
     def can_handle(self, intent: str, context: Dict = None) -> float:
         """Check if this agent can handle the query"""
@@ -37,25 +40,34 @@ class SolarAgent(BaseAgent):
         
         if intent in ["solar_production", "autoconsumo"]:
             confidence = max(confidence, 0.9)
+        
+        self.logger.debug("can_handle checked", query=query[:50], confidence=confidence, matches=matches)
             
         return confidence
     
     def process(self, query: str, context: Dict = None) -> Dict[str, Any]:
         """Process solar-related queries"""
         
+        self.logger.info("Processing solar query", query=query[:100])
+        
         if any(kw in query.lower() for kw in ["produzi", "produção", "hoje", "gerado"]):
+            self.logger.debug("Routing to get_production")
             return self._get_production()
         
         elif any(kw in query.lower() for kw in ["vendi", "venda", "rede", "compensação"]):
+            self.logger.debug("Routing to get_grid_sales")
             return self._get_grid_sales()
         
         elif any(kw in query.lower() for kw in ["poupança", "economia", "roi", "rentabilidade"]):
+            self.logger.debug("Routing to calculate_savings")
             return self._calculate_savings()
         
         elif any(kw in query.lower() for kw in ["previsão", "amanhã", "sol", "tempo"]):
+            self.logger.debug("Routing to forecast_production")
             return self._forecast_production()
         
         else:
+            self.logger.info("No specific action matched, returning default response")
             return {
                 "success": True,
                 "data": {"agent": "solar"},
@@ -69,6 +81,8 @@ class SolarAgent(BaseAgent):
     
     def _get_production(self) -> Dict[str, Any]:
         """Get today's solar production"""
+        
+        self.logger.info("Getting solar production data")
         
         # Pedir dados de consumo ao Billing Agent para calcular cobertura
         self.send_message("billing_agent", "request", {
@@ -86,6 +100,13 @@ class SolarAgent(BaseAgent):
             "sold_to_grid": 6.2
         }
         
+        self.logger.info(
+            "Solar production retrieved",
+            today_kwh=production["today_kwh"],
+            efficiency=production["system_efficiency"],
+            autoconsumed=production["autoconsumed"]
+        )
+        
         return {
             "success": True,
             "data": {"production": production},
@@ -100,6 +121,8 @@ class SolarAgent(BaseAgent):
     def _get_grid_sales(self) -> Dict[str, Any]:
         """Get energy sold to grid"""
         
+        self.logger.info("Getting grid sales data")
+        
         sales = {
             "month_sold_kwh": 185,
             "month_earnings": 23.50,
@@ -108,6 +131,12 @@ class SolarAgent(BaseAgent):
             "current_price_per_kwh": 0.127,
             "market_trend": "stable"
         }
+        
+        self.logger.info(
+            "Grid sales retrieved",
+            month_earnings=sales["month_earnings"],
+            year_earnings=sales["year_earnings"]
+        )
         
         return {
             "success": True,
@@ -123,6 +152,8 @@ class SolarAgent(BaseAgent):
     def _calculate_savings(self) -> Dict[str, Any]:
         """Calculate total savings from solar"""
         
+        self.logger.info("Calculating solar savings")
+        
         savings = {
             "monthly_savings": 89.50,
             "annual_savings": 1074,
@@ -131,6 +162,13 @@ class SolarAgent(BaseAgent):
             "roi_percent": 12.5,
             "co2_avoided_kg": 1800
         }
+        
+        self.logger.info(
+            "Solar savings calculated",
+            monthly_savings=savings["monthly_savings"],
+            roi=savings["roi_percent"],
+            payback_years=savings["payback_remaining_years"]
+        )
         
         return {
             "success": True,
@@ -146,6 +184,8 @@ class SolarAgent(BaseAgent):
     def _forecast_production(self) -> Dict[str, Any]:
         """Forecast tomorrow's production based on weather"""
         
+        self.logger.info("Forecasting solar production")
+        
         forecast = {
             "tomorrow_kwh": 16.2,
             "confidence": 0.82,
@@ -153,6 +193,13 @@ class SolarAgent(BaseAgent):
             "irradiance": "5.8 kWh/m²",
             "recommendation": "Bom dia para lavar painéis à tarde"
         }
+        
+        self.logger.info(
+            "Solar forecast generated",
+            tomorrow_kwh=forecast["tomorrow_kwh"],
+            confidence=forecast["confidence"],
+            weather=forecast["weather"]
+        )
         
         return {
             "success": True,
@@ -169,8 +216,15 @@ class SolarAgent(BaseAgent):
         """Handle requests from other agents"""
         request_type = message.payload.get("request_type")
         
+        self.logger.info(
+            "Handling inter-agent request",
+            from_agent=message.from_agent,
+            request_type=request_type
+        )
+        
         if request_type == "get_solar_contribution":
             # Billing Agent quer saber contribuição solar
+            self.logger.debug("Returning solar contribution")
             return AgentMessage(
                 from_agent=self.name,
                 to_agent=message.from_agent,

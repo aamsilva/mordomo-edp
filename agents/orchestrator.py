@@ -6,6 +6,7 @@ from .base_agent import BaseAgent, AgentMessage
 import sys
 sys.path.insert(0, '..')
 from semantic_router import semantic_router
+from utils.logging_config import get_contextual_logger, generate_request_id
 
 # Import LLM Bridge for natural language enhancement
 try:
@@ -34,11 +35,14 @@ class Orchestrator:
             "session_data": {}
         }
         self.message_queue: List[AgentMessage] = []
+        self.logger = get_contextual_logger("orchestrator")
+        self.logger.info("Orchestrator initialized")
         
     def register_agent(self, agent: BaseAgent):
         """Register an agent with the orchestrator"""
         self.agents[agent.name] = agent
         agent.message_bus = self  # Give agent access to message routing
+        self.logger.info("Agent registered", agent_name=agent.name)
         print(f"✅ Agent registered: {agent.name}")
         
     def get_all_agents(self) -> List[Dict]:
@@ -57,8 +61,17 @@ class Orchestrator:
             "context_updates": dict
         }
         """
+        request_logger = self.logger
+        request_id = request_logger.get_request_id()
+        
         user_context = user_context or {}
         user_context["query"] = query
+        
+        request_logger.info(
+            "Routing query",
+            query=query[:100],
+            request_id=request_id
+        )
         
         # Store in conversation history
         self.shared_context["conversation_history"].append({
@@ -72,25 +85,55 @@ class Orchestrator:
         
         if not candidates:
             # No agent confident enough - use fallback
+            request_logger.warning("No agent found for query, using fallback", query=query[:100])
             return self._fallback_response(query)
+        
+        request_logger.info(
+            "Agents selected",
+            primary_agent=candidates[0].name if candidates else None,
+            candidate_count=len(candidates)
+        )
         
         # Step 2: Process with primary agent
         primary_agent = candidates[0]
-        primary_response = primary_agent.process(query, user_context)
+        try:
+            primary_response = primary_agent.process(query, user_context)
+            request_logger.info(
+                "Primary agent processed query",
+                agent=primary_agent.name,
+                success=primary_response.get("success", False)
+            )
+        except Exception as e:
+            request_logger.error(
+                "Primary agent failed to process query",
+                agent=primary_agent.name,
+                error=str(e),
+                error_type=type(e).__name__
+            )
+            raise
         
         # Step 3: Check if we need collaboration
         collaborating_agents = []
         if len(candidates) > 1:
             # Secondary agents provide additional context
             for agent in candidates[1:]:
-                collab_response = agent.process(query, user_context)
-                collaborating_agents.append({
-                    "agent": agent.name,
-                    "data": collab_response.get("data", {})
-                })
+                try:
+                    collab_response = agent.process(query, user_context)
+                    collaborating_agents.append({
+                        "agent": agent.name,
+                        "data": collab_response.get("data", {})
+                    })
+                    request_logger.debug("Collaboration response received", agent=agent.name)
+                except Exception as e:
+                    request_logger.warning(
+                        "Collaboration agent failed",
+                        agent=agent.name,
+                        error=str(e)
+                    )
         
         # Step 4: Check if primary agent requested collaboration
         if self._needs_collaboration(primary_response):
+            request_logger.debug("Collaboration requested by primary agent")
             collab_data = self._request_collaboration(primary_agent, primary_response)
             primary_response = self._merge_responses(primary_response, collab_data)
         
@@ -106,9 +149,13 @@ class Orchestrator:
                     agent_name=primary_agent.name
                 )
                 primary_response["message"] = enhanced_message
-                print(f"🧠 LLM enhanced response from {primary_agent.name}")
+                request_logger.debug("Response enhanced by LLM", agent=primary_agent.name)
             except Exception as e:
-                print(f"⚠️ LLM enhancement failed: {e}, using raw agent response")
+                request_logger.warning(
+                    "LLM enhancement failed, using raw response",
+                    error=str(e),
+                    agent=primary_agent.name
+                )
         
         # Step 6: Store assistant response in history
         self.shared_context["conversation_history"].append({
@@ -117,6 +164,12 @@ class Orchestrator:
             "agent": primary_agent.name,
             "timestamp": user_context.get("timestamp")
         })
+        
+        request_logger.info(
+            "Query routed successfully",
+            agent=primary_agent.name,
+            request_id=request_id
+        )
         
         return {
             "primary_agent": primary_agent.name,
@@ -131,14 +184,23 @@ class Orchestrator:
         Falls back to keyword matching if LLM fails
         """
         # 🧠 SEMANTIC ROUTING: Use LLM to classify intent
-        agent_name, confidence = semantic_router.route(query)
-        
-        if agent_name != "none" and agent_name in self.agents and confidence > 0.3:
-            selected_agent = self.agents[agent_name]
-            print(f"🧠 Semantic routing: {agent_name} (confidence: {confidence:.2f})")
-            return [selected_agent]
+        try:
+            agent_name, confidence = semantic_router.route(query)
+            
+            if agent_name != "none" and agent_name in self.agents and confidence > 0.3:
+                selected_agent = self.agents[agent_name]
+                self.logger.info(
+                    "Semantic routing successful",
+                    agent=agent_name,
+                    confidence=confidence
+                )
+                print(f"🧠 Semantic routing: {agent_name} (confidence: {confidence:.2f})")
+                return [selected_agent]
+        except Exception as e:
+            self.logger.warning("Semantic routing failed", error=str(e))
         
         # Fallback to keyword-based routing
+        self.logger.info("Using keyword-based routing fallback")
         print(f"⚠️ Semantic routing failed, using keyword fallback")
         scored_agents = []
         
@@ -166,6 +228,8 @@ class Orchestrator:
         collab_requests = response.get("data", {}).get("collaboration_requests", [])
         collab_data = {}
         
+        self.logger.info("Processing collaboration requests", count=len(collab_requests))
+        
         for request in collab_requests:
             target_agent = request.get("agent")
             request_type = request.get("request_type")
@@ -179,10 +243,19 @@ class Orchestrator:
                 )
                 
                 target = self.agents[target_agent]
-                response_msg = target.receive_message(message)
-                
-                if response_msg:
-                    collab_data[target_agent] = response_msg.payload
+                try:
+                    response_msg = target.receive_message(message)
+                    if response_msg:
+                        collab_data[target_agent] = response_msg.payload
+                    self.logger.debug("Collaboration request completed", target=target_agent)
+                except Exception as e:
+                    self.logger.warning(
+                        "Collaboration request failed",
+                        target=target_agent,
+                        error=str(e)
+                    )
+            else:
+                self.logger.warning("Collaboration target agent not found", target=target_agent)
         
         return collab_data
     
@@ -239,6 +312,7 @@ class Orchestrator:
     
     def _fallback_response(self, query: str) -> Dict[str, Any]:
         """Generate fallback when no agent can handle the query"""
+        self.logger.info("Generating fallback response")
         return {
             "primary_agent": "orchestrator",
             "collaborating_agents": [],
@@ -256,13 +330,31 @@ class Orchestrator:
         """Route messages between agents (Message Bus)"""
         if message.to_agent == "*":
             # Broadcast to all agents except sender
+            self.logger.debug("Broadcasting message", from_agent=message.from_agent)
             for name, agent in self.agents.items():
                 if name != message.from_agent:
-                    agent.receive_message(message)
+                    try:
+                        agent.receive_message(message)
+                    except Exception as e:
+                        self.logger.warning(
+                            "Failed to broadcast message",
+                            target=name,
+                            error=str(e)
+                        )
         elif message.to_agent in self.agents:
             # Direct message
-            self.agents[message.to_agent].receive_message(message)
+            self.logger.debug("Routing direct message", from_agent=message.from_agent, to_agent=message.to_agent)
+            try:
+                self.agents[message.to_agent].receive_message(message)
+            except Exception as e:
+                self.logger.error(
+                    "Failed to route message",
+                    from_agent=message.from_agent,
+                    to_agent=message.to_agent,
+                    error=str(e)
+                )
         else:
+            self.logger.warning("Message to unknown agent", to_agent=message.to_agent)
             print(f"⚠️ Message to unknown agent: {message.to_agent}")
     
     def get_conversation_history(self) -> List[Dict]:
@@ -271,6 +363,7 @@ class Orchestrator:
     
     def clear_context(self):
         """Reset shared context (e.g., new conversation)"""
+        self.logger.info("Clearing conversation context")
         self.shared_context = {
             "conversation_history": [],
             "user_profile": {},

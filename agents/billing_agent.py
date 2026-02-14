@@ -3,6 +3,7 @@ Billing Agent - Handles invoices, payments, consumption history
 """
 from typing import Dict, Any, List
 from .base_agent import BaseAgent, AgentMessage
+from utils.logging_config import get_contextual_logger
 
 class BillingAgent(BaseAgent):
     """
@@ -21,6 +22,8 @@ class BillingAgent(BaseAgent):
                 "comparativo_consumo"
             ]
         )
+        self.logger = get_contextual_logger("billing_agent")
+        
         # Mock data - substituir por API real EDP
         self.mock_invoices = {
             "latest": {
@@ -40,6 +43,8 @@ class BillingAgent(BaseAgent):
                 "due_date": "2024-02-05"
             }
         }
+        
+        self.logger.info("BillingAgent initialized")
         
     def can_handle(self, intent: str, context: Dict = None) -> float:
         """Confidence scoring for intent matching"""
@@ -64,6 +69,8 @@ class BillingAgent(BaseAgent):
         # Boost para intents explícitos
         if intent in ["get_invoice", "get_consumption"]:
             confidence = max(confidence, 0.9)
+        
+        self.logger.debug("can_handle checked", query=query[:50], confidence=confidence, matches=matches)
             
         return confidence
     
@@ -72,30 +79,39 @@ class BillingAgent(BaseAgent):
         context = context or {}
         query_lower = query.lower()
         
+        self.logger.info("Processing billing query", query=query[:100])
+        
         # Verificar se há parâmetros específicos
         invoice_number = context.get("invoice_number", "latest")
         period = context.get("period", "current")
         
         # Determinar ação específica
         if any(kw in query_lower for kw in ["fatura", "conta", "valor", "pagar"]):
+            self.logger.debug("Routing to get_invoice", invoice_number=invoice_number)
             return self._get_invoice(invoice_number)
         
         elif any(kw in query_lower for kw in ["consumo", "kwh", "gastei", "gasto"]):
+            self.logger.debug("Routing to get_consumption", period=period)
             return self._get_consumption(period)
         
         elif any(kw in query_lower for kw in ["próxima", "proxima", "previsão", "previsao", "vai custar", "estimativa"]):
+            self.logger.debug("Routing to predict_next_bill")
             return self._predict_next_bill()
         
         elif any(kw in query_lower for kw in ["comparar", "comparação", "comparacao", "diferença", "difereca", "anterior", "mês passado", "mes passado"]):
+            self.logger.debug("Routing to compare_consumption")
             return self._compare_consumption()
         
         elif any(kw in query_lower for kw in ["detalhes", "detalhe", "especificação", "especificacao", "itemizado"]):
+            self.logger.debug("Routing to get_detailed_consumption")
             return self._get_detailed_consumption()
         
         elif any(kw in query_lower for kw in ["pagamento automático", "pagamento automatico", "débito direto", "debito direto", "automatizar"]):
+            self.logger.debug("Routing to setup_automatic_payment")
             return self._setup_automatic_payment()
         
         else:
+            self.logger.info("No specific action matched, returning default response")
             return {
                 "success": True,
                 "data": {"agent": "billing"},
@@ -106,6 +122,13 @@ class BillingAgent(BaseAgent):
     def _get_invoice(self, invoice_number: str) -> Dict[str, Any]:
         """Retrieve invoice details"""
         inv = self.mock_invoices.get(invoice_number, self.mock_invoices["latest"])
+        
+        self.logger.info(
+            "Invoice retrieved",
+            invoice_id=inv["number"],
+            amount=inv["amount"],
+            status=inv["status"]
+        )
         
         # Broadcast context to other agents
         self.broadcast_context({
@@ -136,6 +159,12 @@ class BillingAgent(BaseAgent):
             "projection_next_month": 480
         }
         
+        self.logger.info(
+            "Consumption data retrieved",
+            current_month=consumption_data["current_month"],
+            trend=consumption_data["trend"]
+        )
+        
         return {
             "success": True,
             "data": {"consumption": consumption_data},
@@ -158,6 +187,12 @@ class BillingAgent(BaseAgent):
                 "Previsão meteorológica: frio prolongado"
             ]
         }
+        
+        self.logger.info(
+            "Next bill predicted",
+            estimated_amount=prediction["estimated_amount"],
+            confidence=prediction["confidence"]
+        )
         
         return {
             "success": True,
@@ -187,6 +222,12 @@ class BillingAgent(BaseAgent):
             ]
         }
         
+        self.logger.info(
+            "Consumption comparison generated",
+            difference_percent=comparison["difference_percent"],
+            amount_difference=comparison["amount_difference"]
+        )
+        
         return {
             "success": True,
             "data": {"comparison": comparison},
@@ -211,6 +252,12 @@ class BillingAgent(BaseAgent):
             ]
         }
         
+        self.logger.info(
+            "Detailed consumption retrieved",
+            total_kwh=details["total_kwh"],
+            categories=len(details["breakdown"])
+        )
+        
         return {
             "success": True,
             "data": {"details": details},
@@ -224,6 +271,8 @@ class BillingAgent(BaseAgent):
     
     def _setup_automatic_payment(self) -> Dict[str, Any]:
         """Setup automatic payment info"""
+        self.logger.info("Automatic payment information requested")
+        
         return {
             "success": True,
             "data": {
@@ -242,9 +291,16 @@ class BillingAgent(BaseAgent):
         """Handle requests from other agents"""
         request_type = message.payload.get("request_type")
         
+        self.logger.info(
+            "Handling inter-agent request",
+            from_agent=message.from_agent,
+            request_type=request_type
+        )
+        
         if request_type == "get_customer_value":
             # EV Agent quer saber se cliente é high-value
             last_invoice = self.mock_invoices["latest"]
+            self.logger.debug("Returning customer value", annual_value=last_invoice["amount"] * 12)
             return AgentMessage(
                 from_agent=self.name,
                 to_agent=message.from_agent,
@@ -256,6 +312,7 @@ class BillingAgent(BaseAgent):
             )
         
         elif request_type == "get_consumption_pattern":
+            self.logger.debug("Returning consumption pattern")
             return AgentMessage(
                 from_agent=self.name,
                 to_agent=message.from_agent,

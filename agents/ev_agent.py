@@ -3,6 +3,7 @@ EV Charging Agent - Electric Vehicle optimization
 """
 from typing import Dict, Any
 from .base_agent import BaseAgent, AgentMessage
+from utils.logging_config import get_contextual_logger
 
 class EVAgent(BaseAgent):
     """
@@ -21,6 +22,8 @@ class EVAgent(BaseAgent):
                 "integracao_mobie"
             ]
         )
+        self.logger = get_contextual_logger("ev_agent")
+        self.logger.info("EVAgent initialized")
         
     def can_handle(self, intent: str, context: Dict = None) -> float:
         """Check if this agent can handle the query"""
@@ -44,6 +47,8 @@ class EVAgent(BaseAgent):
         
         if intent in ["ev_charging", "carregar_carro"]:
             confidence = max(confidence, 0.9)
+        
+        self.logger.debug("can_handle checked", query=query[:50], confidence=confidence, matches=matches)
             
         return confidence
     
@@ -51,16 +56,22 @@ class EVAgent(BaseAgent):
         """Process EV-related queries"""
         query_lower = query.lower()
         
+        self.logger.info("Processing EV query", query=query[:100])
+        
         if any(kw in query_lower for kw in ["horário", "horario", "hora", "quando", "melhor", "ótimo", "otimo"]):
+            self.logger.debug("Routing to optimal_charging_time")
             return self._optimal_charging_time()
         
         elif any(kw in query_lower for kw in ["custo", "custa", "custam", "preço", "preco", "gasto", "gastos", "pago", "paguei", "quanto", "valor", "eur", "€"]):
+            self.logger.debug("Routing to charging_cost_analysis")
             return self._charging_cost_analysis()
         
         elif any(kw in query_lower for kw in ["posto", "postos", "carregador", "público", "publico", "mobie", "local", "próximo", "proximo", "perto"]):
+            self.logger.debug("Routing to find_charging_stations")
             return self._find_charging_stations()
         
         else:
+            self.logger.info("No specific action matched, returning default response")
             return {
                 "success": True,
                 "data": {"agent": "ev"},
@@ -74,6 +85,8 @@ class EVAgent(BaseAgent):
     
     def _optimal_charging_time(self) -> Dict[str, Any]:
         """Calculate optimal charging time based on tariffs"""
+        
+        self.logger.info("Calculating optimal charging time")
         
         # Solicitar dados ao Billing Agent
         self.send_message("billing_agent", "request", {
@@ -89,6 +102,12 @@ class EVAgent(BaseAgent):
             "autonomy_gained": "~350 km por carga completa"
         }
         
+        self.logger.info(
+            "Optimal charging time calculated",
+            best_start=analysis["best_start_time"],
+            savings=analysis["savings_vs_peak"]
+        )
+        
         return {
             "success": True,
             "data": {"optimization": analysis},
@@ -103,6 +122,8 @@ class EVAgent(BaseAgent):
     def _charging_cost_analysis(self) -> Dict[str, Any]:
         """Analyze EV charging costs"""
         
+        self.logger.info("Analyzing charging costs")
+        
         costs = {
             "home_charging_monthly": 85.50,
             "public_charging_monthly": 45.00,
@@ -111,6 +132,12 @@ class EVAgent(BaseAgent):
             "cost_per_100km": "€4.20",
             "annual_projection": "€1,566"
         }
+        
+        self.logger.info(
+            "Charging costs calculated",
+            total_monthly=costs["total_monthly"],
+            vs_gasoline=costs["vs_gasoline"]
+        )
         
         return {
             "success": True,
@@ -126,11 +153,19 @@ class EVAgent(BaseAgent):
     def _find_charging_stations(self) -> Dict[str, Any]:
         """Find nearby charging stations"""
         
+        self.logger.info("Finding charging stations")
+        
         stations = [
             {"name": "MOBI.E - Continente Benfica", "distance": "1.2 km", "available": True, "price": "€0.35/kWh"},
             {"name": "Tesla Supercharger - Colombo", "distance": "2.5 km", "available": True, "price": "€0.42/kWh"},
             {"name": "Ionity - A1", "distance": "5.8 km", "available": False, "price": "€0.65/kWh"}
         ]
+        
+        self.logger.info(
+            "Charging stations found",
+            count=len(stations),
+            available=sum(1 for s in stations if s["available"])
+        )
         
         return {
             "success": True,
@@ -147,8 +182,15 @@ class EVAgent(BaseAgent):
         """Handle requests from other agents"""
         request_type = message.payload.get("request_type")
         
+        self.logger.info(
+            "Handling inter-agent request",
+            from_agent=message.from_agent,
+            request_type=request_type
+        )
+        
         if request_type == "get_ev_impact_on_bill":
             # Billing Agent quer saber impacto do EV
+            self.logger.debug("Returning EV impact on bill")
             return AgentMessage(
                 from_agent=self.name,
                 to_agent=message.from_agent,
