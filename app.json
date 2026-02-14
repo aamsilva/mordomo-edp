@@ -1,0 +1,26 @@
+{
+  "name": "Mordomo EDP",
+  "description": "Multi-Agent System for EDP virtual assistant",
+  "repository": "https://github.com/aamsilva/mordomo-edp",
+  "logo": "",
+  "keywords": ["python", "fastapi", "multi-agent", "llm"],
+  "image": "heroku/python",
+  "stack": "heroku-22",
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "env": {
+    "SYNTHETIC_API_KEY": {
+      "description": "API key for Synthetic.new LLM service",
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  }
+}
