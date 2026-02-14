@@ -20,13 +20,25 @@
 ### Progresso Sprint 2
 - [x] Issues #6, #7, #8 criadas (Railway, Logging, Error Handling)
 - [x] Issues #1, #2, #3 fechadas (Sprint 1)
-- [ ] Issue #5 (Docker) → **Closed, won't do** (Railway tem Docker built-in)
+- [x] Issue #5 (Docker) → **Closed, won't do** (Railway tem Docker built-in)
+- [x] Issue #7 (Structured Logging) → **Closed** ✅ (código completo)
+- [x] Issue #8 (Error Handling) → **Closed** ✅ (código completo)
+- [ ] Issue #6 (Railway Deploy) → **Em curso** (configs prontas, deploy pendente)
 - [ ] Issue #4 (Support Agent) → Sprint 2 continua
 
 ### GitHub
 - **Repo:** https://github.com/aamsilva/mordomo-edp
-- **Issues abertas:** #4, #6, #7, #8
-- **Último commit:** `3ba4275` (API keys em .env)
+- **Issues abertas:** #4, #6
+- **Issues fechadas:** #1, #2, #3, #5, #7, #8
+- **Último commit:** Verificar no GitHub
+
+### O que foi entregue (14 Fev 2026)
+| Componente | Status | Detalhe |
+|------------|--------|---------|
+| Logging JSON | ✅ Completo | `utils/logging_config.py` funcional |
+| Error Handling | ✅ Completo | `utils/exceptions.py` com hierarquia completa |
+| Deploy Configs | ✅ Pronto | Render, Railway, Fly.io, Heroku configurados |
+| Deploy Executado | ⏳ Pendente | Necessita ação manual ou sub-agente dedicado |
 
 ---
 
